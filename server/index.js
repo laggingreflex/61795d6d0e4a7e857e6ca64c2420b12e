@@ -3,7 +3,7 @@ import bodyparser from 'koa-bodyparser';
 import Router from 'koa-router';
 import _ from 'lodash';
 
-import { ShopDB } from './db';
+import { InfoDB, getShop, ShopDB } from './db';
 
 const app = new Koa();
 
@@ -13,7 +13,7 @@ router.post('/shop', async ctx => {
   const shop_name = ctx.body.shop;
   const db_name = _.snakeCase(shop_name);
 
-  const shop = new ShopDB({ name: shop_name });
+  const shop = InfoDB.create({ shop_name, db_name, requests: 0 });
 
   // success - send back json
   ctx.body = { id: shop.id };
@@ -21,18 +21,14 @@ router.post('/shop', async ctx => {
 
 router.post('/shop/:shop_id/product', async ctx => {
   const shop_id = ctx.params.shop_id;
-  const product_name = ctx.body.name;
+  const product_details = ctx.body;
 
-  const shop = await ShopDB.getShopBtId(shop_id);
-  const product = shop.addProduct({ name: product_name })
+  const shop = await InfoDB.findById(shop_id);
+  const product = await shop.create(product_details);
 
   ctx.body = { id: product.id };
 
-  (() => {
-    // async op; no need to block request while incrementing the shop requests field
-    shop.requests++;
-    shop.save();
-  })
+  shop.update({ requests: shop.requests + 1 });
 });
 
 
@@ -46,11 +42,7 @@ router.put('/shop/:shop_id/product/:product_id', async ctx => {
 
   ctx.body = { id: product.id };
 
-  (() => {
-    // async op; no need to block request while incrementing the shop requests field
-    shop.requests++;
-    shop.save();
-  })
+  shop.update({ requests: shop.requests + 1 });
 });
 
 
@@ -63,11 +55,7 @@ router.delete('/shop/:shop_id/product/:product_id', async ctx => {
 
   ctx.body = { id: product_id };
 
-  (() => {
-    // async op; no need to block request while incrementing the shop requests field
-    shop.requests++;
-    shop.save();
-  })
+  shop.update({ requests: shop.requests + 1 });
 });
 
 
@@ -80,11 +68,7 @@ router.get('/shop/:shop_id/products', async ctx => {
 
   ctx.body = { products };
 
-  (() => {
-    // async op; no need to block request while incrementing the shop requests field
-    shop.requests++;
-    shop.save();
-  })
+  shop.update({ requests: shop.requests + 1 });
 });
 
 
