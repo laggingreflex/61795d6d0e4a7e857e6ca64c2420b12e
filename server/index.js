@@ -3,7 +3,7 @@ import bodyparser from 'koa-bodyparser';
 import Router from 'koa-router';
 import _ from 'lodash';
 
-import { InfoDB, getShopDB } from './db';
+import { InfoDB, getShopDB, ShopDbSchema } from './db';
 
 const app = new Koa();
 
@@ -34,7 +34,11 @@ router.post('/shop/:shop_id/product', async ctx => {
 });
 
 
-router.put('/shop/:shop_id/product/:product_id', async ctx => {
+router.all('/shop/:shop_id/product/:product_id', async ctx => {
+  // put/patch
+  if (ctx.method !== 'put' && 'patch' !== ctx.method) {
+    return ctx.next();
+  }
 
   const shop_id = ctx.params.shop_id;
   const product_id = ctx.params.product_id;
@@ -42,6 +46,17 @@ router.put('/shop/:shop_id/product/:product_id', async ctx => {
 
   const shopInfo = await InfoDB.findById(shop_id);
   const ShopDB = getShopDB(shopInfo.db_name);
+
+  // Difference between patch and put.
+  if (ctx.method === 'put') {
+    for (const field in ShopDbSchema) {
+      if (!product[field]) {
+        if (ShopDbSchema[field].default) {
+          product.field = ShopDbSchema[field].default;
+        }
+      }
+    }
+  }
 
   await ShopDB.update(product, { where: { id: product_id } })
 
