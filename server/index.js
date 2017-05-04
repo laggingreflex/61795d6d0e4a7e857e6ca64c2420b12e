@@ -9,16 +9,6 @@ const app = new Koa();
 
 const router = new Router()
 
-router.post('/shop', async ctx => {
-  const shop_name = ctx.body.shop;
-  const db_name = _.snakeCase(shop_name);
-
-  const shopInfo = InfoDB.create({ shop_name, db_name, requests: 0 });
-
-  // success - send back json
-  ctx.body = { id: shop.id };
-});
-
 router.post('/shop/:shop_id/product', async ctx => {
   const shop_id = ctx.params.shop_id;
   const product_details = ctx.body;
@@ -58,7 +48,7 @@ router.all('/shop/:shop_id/product/:product_id', async ctx => {
     }
   }
 
-  await ShopDB.update(product, { where: { id: product_id } })
+  await ShopDB.update(product, { where: { id: product_id } });
 
   ctx.body = { id: product.id };
 
